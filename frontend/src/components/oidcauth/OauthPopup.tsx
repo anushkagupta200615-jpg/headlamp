@@ -130,11 +130,18 @@ const OauthPopup: React.FC<OauthPopupProps> = props => {
         // Fallback for cross-origin popups where addEventListener fails
         popupCheckIntervalRef.current = setInterval(() => {
           if (!externalWindowRef.current) {
-            if (popupCheckIntervalRef.current) clearInterval(popupCheckIntervalRef.current);
+            if (popupCheckIntervalRef.current) {
+              clearInterval(popupCheckIntervalRef.current);
+              popupCheckIntervalRef.current = null;
+            }
+            return;
           }
           // Check if the user manually closed the popup window
-          else if (externalWindowRef.current.closed) {
-            if (popupCheckIntervalRef.current) clearInterval(popupCheckIntervalRef.current);
+          if (externalWindowRef.current.closed) {
+            if (popupCheckIntervalRef.current) {
+              clearInterval(popupCheckIntervalRef.current);
+              popupCheckIntervalRef.current = null;
+            }
             beforeUnloadListener();
           }
         }, 500);

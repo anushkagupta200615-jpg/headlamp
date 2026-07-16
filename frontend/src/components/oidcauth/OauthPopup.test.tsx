@@ -140,6 +140,10 @@ describe('OauthPopup', () => {
   });
 
   it('uses fallback interval to detect popup closure when addEventListener throws', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    let unmountComponent: (() => void) | undefined;
+
     try {
       let isClosed = false;
       const popupWindow = {
@@ -160,7 +164,7 @@ describe('OauthPopup', () => {
       const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
       const onClose = vi.fn();
 
-      render(
+      const { unmount } = render(
         <OauthPopup
           button={Button}
           url="https://example.com/auth"
@@ -171,12 +175,15 @@ describe('OauthPopup', () => {
           Open Auth Popup
         </OauthPopup>
       );
+      unmountComponent = unmount;
 
       fireEvent.click(screen.getByRole('button', { name: 'Open Auth Popup' }));
 
       const storageListener = addEventListenerSpy.mock.calls.find(
         ([eventName]) => eventName === 'storage'
       )?.[1];
+
+      expect(storageListener).toBeTypeOf('function');
 
       // Wait a bit, shouldn't trigger onClose yet
       await new Promise(r => setTimeout(r, 100));
@@ -191,6 +198,10 @@ describe('OauthPopup', () => {
       expect(removeEventListenerSpy).toHaveBeenCalledWith('storage', storageListener);
       expect(onClose).toHaveBeenCalled();
     } finally {
+      if (unmountComponent) {
+        unmountComponent();
+      }
+      consoleSpy.mockRestore();
     }
   });
 });
