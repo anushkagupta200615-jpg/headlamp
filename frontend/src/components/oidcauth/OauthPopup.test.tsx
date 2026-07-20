@@ -140,6 +140,7 @@ describe('OauthPopup', () => {
   });
 
   it('uses fallback interval to detect popup closure when addEventListener throws', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     let unmountComponent: (() => void) | undefined;
@@ -185,22 +186,24 @@ describe('OauthPopup', () => {
 
       expect(storageListener).toBeTypeOf('function');
 
-      // Wait a bit, shouldn't trigger onClose yet
-      await new Promise(r => setTimeout(r, 100));
+      // Advance time without the window closing — shouldn't trigger onClose yet
+      await vi.advanceTimersByTimeAsync(100);
       expect(onClose).not.toHaveBeenCalled();
 
       // Simulate user closing the window
       isClosed = true;
 
-      // Wait for the next 500ms interval to tick
-      await new Promise(r => setTimeout(r, 600));
+      // Advance past the 500ms interval tick
+      await vi.advanceTimersByTimeAsync(600);
 
       expect(removeEventListenerSpy).toHaveBeenCalledWith('storage', storageListener);
       expect(onClose).toHaveBeenCalled();
     } finally {
+      // Unmount while still using fake timers so effect cleanup clears the interval correctly
       if (unmountComponent) {
         unmountComponent();
       }
+      vi.useRealTimers();
       consoleSpy.mockRestore();
     }
   });
